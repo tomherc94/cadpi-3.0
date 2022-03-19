@@ -41,7 +41,7 @@ func UploadFile(file, filename string, wg *sync.WaitGroup) {
 	}
 	conn := InitiateMongoClient()
 	bucket, err := gridfs.NewBucket(
-		conn.Database("myfiles"),
+		conn.Database("originalImages"),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -63,11 +63,14 @@ func UploadFile(file, filename string, wg *sync.WaitGroup) {
 	}
 	log.Printf("Write file to DB was successful. File size: %d M\n", fileSize)
 }
-func DownloadFile(fileName string) {
+func DownloadFile(fileName string, wg *sync.WaitGroup) {
+
+	defer wg.Done()
+
 	conn := InitiateMongoClient()
 
 	// For CRUD operations, here is an example
-	db := conn.Database("myfiles")
+	db := conn.Database("convertedImages")
 	fsFiles := db.Collection("fs.files")
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	var results bson.M
@@ -87,11 +90,11 @@ func DownloadFile(fileName string) {
 		log.Fatal(err)
 	}
 	fmt.Printf("File size to download: %v\n", dStream)
-	ioutil.WriteFile(fileName, buf.Bytes(), 0600)
+	ioutil.WriteFile("./masterOutput/"+fileName, buf.Bytes(), 0600)
 
 }
 
-func main() {
+func up() {
 	now := time.Now()
 	var wg sync.WaitGroup
 
@@ -106,7 +109,7 @@ func main() {
 		filename := "./masterInput/" + path.Base(f.Name())
 
 		//fmt.Println(filename + " -> MongoDB")
-		go UploadFile(filename, filename, &wg)
+		go UploadFile(filename, f.Name(), &wg)
 
 	}
 	fmt.Printf("Numero de goroutines: %d\n", runtime.NumGoroutine())
@@ -118,6 +121,58 @@ func main() {
 		fmt.Println("Quantidade de imagens: ", len(files))
 		fmt.Println("Tempo de execução: ", time.Since(now))
 	}()
+}
+
+func down() {
+	now := time.Now()
+	var wg sync.WaitGroup
+
+	files := []string{"image_1.jpg", "image_2.jpg", "image_3.jpg", "image_4.jpg", "image_5.jpg"}
+
+	for _, f := range files {
+		wg.Add(1)
+
+		go DownloadFile(f, &wg)
+	}
+
+	fmt.Printf("Numero de goroutines: %d\n", runtime.NumGoroutine())
+	wg.Wait()
+
+	defer func() {
+		fmt.Println()
+		fmt.Println("RELATÓRIO")
+		fmt.Println("Quantidade de imagens: ", len(files))
+		fmt.Println("Tempo de execução: ", time.Since(now))
+	}()
+}
+
+func deleteDatabases() {
+	conn := InitiateMongoClient()
+	db := conn.Database("originalImages")
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	db.Drop(ctx)
+
+	db = conn.Database("convertedImages")
+	ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
+	db.Drop(ctx)
+
+}
+
+func main() {
+
+	arg := os.Args[1]
+
+	switch arg {
+	case "up":
+		up()
+
+	case "down":
+		down()
+		deleteDatabases()
+
+	default:
+		log.Fatal("Parametro incorreto")
+	}
 
 	/*// Get os.Args values
 	file := os.Args[1] //os.Args[1] = testfile.zip
