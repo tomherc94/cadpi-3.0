@@ -1,0 +1,5 @@
+#PARAR MONGODB LOCAL
+sudo /etc/init.d/mongodb stop
+
+#ACESSAR VIA BROWSER
+http://localhost:8081

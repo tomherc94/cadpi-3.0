@@ -127,12 +127,17 @@ func down() {
 	now := time.Now()
 	var wg sync.WaitGroup
 
-	files := []string{"image_1.jpg", "image_2.jpg", "image_3.jpg", "image_4.jpg", "image_5.jpg"}
+	//files := []string{"image_1.jpg", "image_2.jpg", "image_3.jpg", "image_4.jpg", "image_5.jpg"}
+
+	files, err := ioutil.ReadDir("./masterInput")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	for _, f := range files {
 		wg.Add(1)
 
-		go DownloadFile(f, &wg)
+		go DownloadFile(f.Name(), &wg)
 	}
 
 	fmt.Printf("Numero de goroutines: %d\n", runtime.NumGoroutine())
