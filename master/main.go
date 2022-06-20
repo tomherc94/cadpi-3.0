@@ -1,189 +1,123 @@
 package main
 
 import (
-	"bytes"
-	"context"
 	"fmt"
-	"io/ioutil"
-	"log"
+	"io"
+	"net/http"
 	"os"
-	"path"
-	"runtime"
-	"sync"
-	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/gridfs"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"strconv"
+	"text/template"
 )
 
-func InitiateMongoClient() *mongo.Client {
-	var err error
-	var client *mongo.Client
-	//uri := "mongodb://localhost:27017"
-	uri := "mongodb://root:example@localhost:27017/"
-	opts := options.Client()
-	opts.ApplyURI(uri)
-	opts.SetMaxPoolSize(5)
-	if client, err = mongo.Connect(context.Background(), opts); err != nil {
-		fmt.Println(err.Error())
-	}
-	return client
+var filenames = []string{"public/upload.html", "public/download.html"}
+
+// Compile templates on start of the application
+var templates = template.Must(template.ParseFiles(filenames...))
+
+// Display the named template
+func display(w http.ResponseWriter, page string, data interface{}) {
+	templates.ExecuteTemplate(w, page+".html", data)
 }
-func UploadFile(file, filename string, wg *sync.WaitGroup) {
 
-	defer wg.Done()
+func uploadFile(w http.ResponseWriter, r *http.Request) {
+	// Maximum upload of 10 MB files
+	r.ParseMultipartForm(10 << 20)
 
-	data, err := ioutil.ReadFile(file)
+	// Get handler for filename, size and headers
+	file, handler, err := r.FormFile("myFile")
 	if err != nil {
-		log.Fatal(err)
-	}
-	conn := InitiateMongoClient()
-	bucket, err := gridfs.NewBucket(
-		conn.Database("originalImages"),
-	)
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
-	uploadStream, err := bucket.OpenUploadStream(
-		filename,
-	)
-	if err != nil {
+		fmt.Println("Error Retrieving the File")
 		fmt.Println(err)
-		os.Exit(1)
+		return
 	}
-	defer uploadStream.Close()
 
-	fileSize, err := uploadStream.Write(data)
+	defer file.Close()
+	fmt.Printf("Uploaded File: %+v\n", handler.Filename)
+	fmt.Printf("File Size: %+v\n", handler.Size)
+	fmt.Printf("MIME Header: %+v\n", handler.Header)
+
+	// Create file
+	dst, err := os.Create(handler.Filename)
+
 	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	log.Printf("Write file to DB was successful. File size: %d M\n", fileSize)
-}
-func DownloadFile(fileName string, wg *sync.WaitGroup) {
 
-	defer wg.Done()
+	defer dst.Close()
 
-	conn := InitiateMongoClient()
-
-	// For CRUD operations, here is an example
-	db := conn.Database("convertedImages")
-	fsFiles := db.Collection("fs.files")
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	var results bson.M
-	err := fsFiles.FindOne(ctx, bson.M{}).Decode(&results)
-	if err != nil {
-		log.Fatal(err)
+	// Copy the uploaded file to the created file on the filesystem
+	if _, err := io.Copy(dst, file); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	// you can print out the results
-	fmt.Println(results)
 
-	bucket, _ := gridfs.NewBucket(
-		db,
-	)
-	var buf bytes.Buffer
-	dStream, err := bucket.DownloadToStreamByName(fileName, &buf)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("File size to download: %v\n", dStream)
-	ioutil.WriteFile("./masterOutput/"+fileName, buf.Bytes(), 0600)
+	fmt.Fprintf(w, "Aguardando processamento ...\n")
+
+	//CHAMAR O MASTER.GO
+	descompactarMasterInput()
+	master("up")
+
+	http.Redirect(w, r, "/download", http.StatusFound)
 
 }
 
-func up() {
-	now := time.Now()
-	var wg sync.WaitGroup
+func downloadFile(w http.ResponseWriter, r *http.Request) {
+	Openfile, err := os.Open("./banco.zip") //Open the file to be downloaded later
+	//Close after function return
 
-	files, err := ioutil.ReadDir("./masterInput")
 	if err != nil {
-		log.Fatal(err)
+		http.Error(w, "File not found.", 404) //return 404 if file is not found
+		return
 	}
+	defer Openfile.Close()
 
-	for _, f := range files {
-		wg.Add(1)
+	tempBuffer := make([]byte, 512)                       //Create a byte array to read the file later
+	Openfile.Read(tempBuffer)                             //Read the file into  byte
+	FileContentType := http.DetectContentType(tempBuffer) //Get file header
 
-		filename := "./masterInput/" + path.Base(f.Name())
+	FileStat, _ := Openfile.Stat()                     //Get info from file
+	FileSize := strconv.FormatInt(FileStat.Size(), 10) //Get file size as a string
 
-		//fmt.Println(filename + " -> MongoDB")
-		go UploadFile(filename, f.Name(), &wg)
+	Filename := "demo_download"
 
-	}
-	fmt.Printf("Numero de goroutines: %d\n", runtime.NumGoroutine())
-	wg.Wait()
+	//Set the headers
+	w.Header().Set("Content-Type", FileContentType+";"+Filename)
+	w.Header().Set("Content-Length", FileSize)
 
-	defer func() {
-		fmt.Println()
-		fmt.Println("RELATÓRIO")
-		fmt.Println("Quantidade de imagens: ", len(files))
-		fmt.Println("Tempo de execução: ", time.Since(now))
-	}()
+	Openfile.Seek(0, 0)  //We read 512 bytes from the file already so we reset the offset back to 0
+	io.Copy(w, Openfile) //'Copy' the file to the client
+
+	fmt.Fprintf(w, "Successfully Download File\n")
 }
 
-func down() {
-	now := time.Now()
-	var wg sync.WaitGroup
-
-	//files := []string{"image_1.jpg", "image_2.jpg", "image_3.jpg", "image_4.jpg", "image_5.jpg"}
-
-	files, err := ioutil.ReadDir("./masterInput")
-	if err != nil {
-		log.Fatal(err)
+func uploadHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		display(w, "upload", nil)
+	case "POST":
+		uploadFile(w, r)
 	}
-
-	for _, f := range files {
-		wg.Add(1)
-
-		go DownloadFile(f.Name(), &wg)
-	}
-
-	fmt.Printf("Numero de goroutines: %d\n", runtime.NumGoroutine())
-	wg.Wait()
-
-	defer func() {
-		fmt.Println()
-		fmt.Println("RELATÓRIO")
-		fmt.Println("Quantidade de imagens: ", len(files))
-		fmt.Println("Tempo de execução: ", time.Since(now))
-	}()
 }
 
-func deleteDatabases() {
-	conn := InitiateMongoClient()
-	db := conn.Database("originalImages")
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	db.Drop(ctx)
-
-	db = conn.Database("convertedImages")
-	ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
-	db.Drop(ctx)
-
+func downloadHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		display(w, "download", nil)
+	case "POST":
+		downloadFile(w, r)
+	}
 }
 
 func main() {
+	// Upload route
+	http.HandleFunc("/upload", uploadHandler)
 
-	arg := os.Args[1]
+	http.HandleFunc("/download", downloadHandler)
 
-	switch arg {
-	case "up":
-		up()
+	println(("Escutando na porta 8080"))
 
-	case "down":
-		down()
-		deleteDatabases()
+	//Listen on port 8080
+	http.ListenAndServe(":8080", nil)
 
-	default:
-		log.Fatal("Parametro incorreto")
-	}
-
-	/*// Get os.Args values
-	file := os.Args[1] //os.Args[1] = testfile.zip
-	filename := path.Base(file)
-	UploadFile(file, filename)
-	// Uncomment the below line and comment the UploadFile above this line to download the file
-	//DownloadFile(filename)
-	*/
 }
