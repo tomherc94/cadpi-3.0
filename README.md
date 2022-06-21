@@ -40,3 +40,21 @@ $go run main.go down
 
 Verificar imagens convertidas no diretório masterOutput
 
+
+
+
+
+BIZU!
+
+Método 1 :
+
+Suponha que o nome do seu projeto sejaMyProject
+Vá para o seu caminho, corrago build
+Ele criará um arquivo executável como o nome do seu projeto ("MyProject")
+Em seguida, execute o executável usando./MyProject
+Você pode fazer as duas etapas ao mesmo tempo digitando go build && ./MyProject. Os arquivos Go do package mainsão compilados em um executável.
+
+Método 2 :
+
+Basta correr go run *.go. Ele não criará nenhum executável, mas será executado.
+

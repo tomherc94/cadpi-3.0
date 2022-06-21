@@ -166,13 +166,11 @@ func deleteDatabases() {
 
 }
 
-func descompactarMasterInput() {
-	//DESCOMPACTAR BANCO DE IMAGENS NO DIRETÓRIO masterInput
-}
-
 func master(arg string) {
 
 	//arg := os.Args[1]
+
+	unzip("banco.zip")
 
 	switch arg {
 	case "up":

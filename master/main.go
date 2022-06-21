@@ -55,7 +55,6 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Aguardando processamento ...\n")
 
 	//CHAMAR O MASTER.GO
-	descompactarMasterInput()
 	master("up")
 
 	http.Redirect(w, r, "/download", http.StatusFound)
