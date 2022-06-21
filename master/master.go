@@ -170,15 +170,23 @@ func master(arg string) {
 
 	//arg := os.Args[1]
 
-	unzip("banco.zip")
-
 	switch arg {
 	case "up":
+		unzip("banco.zip")
+
+		e := os.Remove("banco.zip")
+		if e != nil {
+			log.Fatal(e)
+		}
+
 		up()
 
 	case "down":
 		down()
 		deleteDatabases()
+		if err := zipSource("masterOutput", "banco.zip"); err != nil {
+			log.Fatal(err)
+		}
 
 	default:
 		log.Fatal("Parametro incorreto")

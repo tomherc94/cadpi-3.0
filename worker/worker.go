@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"runtime"
 	"sync"
@@ -147,6 +148,21 @@ func down(files []string) {
 	}()
 }
 
+func workerApp() {
+
+	arg0 := "./executeWorkerApp.sh"
+
+	cmd := exec.Command(arg0)
+	//fmt.Println(cmd.String())
+
+	errCmd := cmd.Run()
+
+	if errCmd != nil {
+		fmt.Println(errCmd)
+	}
+
+}
+
 func main() {
 
 	arg := os.Args[1]
@@ -186,6 +202,7 @@ func main() {
 
 	case "down":
 		down(files)
+		workerApp()
 
 	default:
 		log.Fatal("Parametro incorreto")
