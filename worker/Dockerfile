@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM golang:latest
 
 USER root
 
@@ -6,12 +6,7 @@ RUN mkdir /home/worker
 
 WORKDIR /home/worker
 
-COPY workerApp.jar ./
-COPY workerCopy.jar ./
-COPY executeWorkerApp.sh ./
-COPY executeWorkerCopy.sh ./
-COPY clearWorker.sh ./
-COPY worker.sh ./
+COPY . . 
 
 RUN chmod 777 worker.sh
 
@@ -19,6 +14,10 @@ RUN ./worker.sh
 
 VOLUME ./workerInput /home/worker/workerInput
 
-CMD ./executeWorkerApp.sh
+EXPOSE 27017:27017
+
+RUN go build -o worker
+
+CMD ["./worker"]
 
 

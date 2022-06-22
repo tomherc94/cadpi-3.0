@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"text/template"
+	"time"
 )
 
 var filenames = []string{"public/upload.html", "public/download.html"}
@@ -52,10 +54,20 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Aguardando processamento ...\n")
+	fmt.Fprintf(w, "Aguardando processamento ...  \n")
 
 	//CHAMAR O MASTER.GO
-	master("up")
+
+	var wg sync.WaitGroup
+	now := time.Now()
+	wg.Add(1)
+	go master("up", &wg)
+	wg.Wait()
+
+	defer func() {
+		fmt.Println("RELATÓRIO")
+		fmt.Println("Tempo de execução: ", time.Since(now))
+	}()
 
 	http.Redirect(w, r, "/download", http.StatusFound)
 

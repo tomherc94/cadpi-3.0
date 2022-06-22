@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"strconv"
 	"sync"
 	"time"
 
@@ -95,8 +96,8 @@ func DownloadFile(fileName string, wg *sync.WaitGroup) {
 
 }
 
-func up() {
-	now := time.Now()
+func up() int {
+
 	var wg sync.WaitGroup
 
 	files, err := ioutil.ReadDir("./masterInput")
@@ -116,12 +117,8 @@ func up() {
 	fmt.Printf("Numero de goroutines: %d\n", runtime.NumGoroutine())
 	wg.Wait()
 
-	defer func() {
-		fmt.Println()
-		fmt.Println("RELATÓRIO")
-		fmt.Println("Quantidade de imagens: ", len(files))
-		fmt.Println("Tempo de execução: ", time.Since(now))
-	}()
+	return len(files)
+
 }
 
 func down() {
@@ -166,9 +163,17 @@ func deleteDatabases() {
 
 }
 
-func master(arg string) {
+func createWorkers(qtdWorkers int) {
+	for i := 1; i <= qtdWorkers; i++ {
+		//cria worker
+		fmt.Println("Cria worker" + strconv.Itoa(i))
+	}
+}
+
+func master(arg string, wg *sync.WaitGroup) {
 
 	//arg := os.Args[1]
+	defer wg.Done()
 
 	switch arg {
 	case "up":
@@ -179,7 +184,18 @@ func master(arg string) {
 			log.Fatal(e)
 		}
 
-		up()
+		tamanhoBanco := up()
+
+		fmt.Print("Quantidade de imagens: " + strconv.Itoa(tamanhoBanco))
+		//cria os workers
+		qtdWokers := tamanhoBanco / 10
+
+		if qtdWokers == 0 {
+			qtdWokers = 1
+		}
+
+		fmt.Print("Quantidade de workers: " + strconv.Itoa(qtdWokers))
+		createWorkers(qtdWokers)
 
 	case "down":
 		down()
