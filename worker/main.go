@@ -22,8 +22,9 @@ import (
 func InitiateMongoClient() *mongo.Client {
 	var err error
 	var client *mongo.Client
-	//uri := "mongodb://localhost:27017"
-	uri := "mongodb://root:example@172.21.0.2:27017/"
+	//uri := "mongodb://root:example@localhost:27017/"
+	//uri := "mongodb://root:example@172.22.0.3:27017/"
+	uri := "mongodb://root:example@mongo_container:27017/"
 	opts := options.Client()
 	opts.ApplyURI(uri)
 	opts.SetMaxPoolSize(5)
@@ -204,6 +205,7 @@ func main() {
 	case "down":
 		down(files)
 		workerApp()
+		up()
 
 	default:
 		log.Fatal("Parametro incorreto")

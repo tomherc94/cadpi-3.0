@@ -3,3 +3,6 @@ sudo /etc/init.d/mongodb stop
 
 #ACESSAR VIA BROWSER
 http://localhost:8081
+
+#VERIFICAR IP DO CONTAINER MONGODB
+sudo docker inspect mongodb_mongo_1 | more

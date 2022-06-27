@@ -12,9 +12,9 @@ RUN chmod 777 worker.sh
 
 RUN ./worker.sh
 
-VOLUME ./workerInput /home/worker/workerInput
+VOLUME /home/tomas/Documentos/UNISAL/Modulo9/TCC/worker/workerInput /home/worker/workerInput
 
-EXPOSE 27017:27017
+VOLUME /home/tomas/Documentos/UNISAL/Modulo9/TCC/worker/workerOutput /home/worker/workerOutput
 
 RUN go build -o worker
 
