@@ -13,6 +13,8 @@ import (
 
 var filenames = []string{"public/upload.html", "public/download.html"}
 
+var now time.Time
+
 // Compile templates on start of the application
 var templates = template.Must(template.ParseFiles(filenames...))
 
@@ -22,6 +24,8 @@ func display(w http.ResponseWriter, page string, data interface{}) {
 }
 
 func uploadFile(w http.ResponseWriter, r *http.Request) {
+	now = time.Now()
+	fmt.Println("RELATÓRIO")
 	// Maximum upload of 10 MB files
 	r.ParseMultipartForm(10 << 20)
 
@@ -34,9 +38,9 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer file.Close()
-	fmt.Printf("Uploaded File: %+v\n", handler.Filename)
-	fmt.Printf("File Size: %+v\n", handler.Size)
-	fmt.Printf("MIME Header: %+v\n", handler.Header)
+	//fmt.Printf("Uploaded File: %+v\n", handler.Filename)
+	//fmt.Printf("File Size: %+v\n", handler.Size)
+	//fmt.Printf("MIME Header: %+v\n", handler.Header)
 
 	// Create file
 	dst, err := os.Create(handler.Filename)
@@ -54,20 +58,19 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Aguardando processamento ...  \n")
-
 	//CHAMAR O MASTER.GO
 
 	var wg sync.WaitGroup
-	now := time.Now()
+
 	wg.Add(1)
 	go master("up", &wg)
 	wg.Wait()
 
-	defer func() {
-		fmt.Println("RELATÓRIO")
-		fmt.Println("Tempo de execução: ", time.Since(now))
-	}()
+	wg.Add(1)
+	go master("down", &wg)
+	wg.Wait()
+
+	fmt.Println("Tempo de execução: ", time.Since(now))
 
 	http.Redirect(w, r, "/download", http.StatusFound)
 
@@ -107,6 +110,8 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		display(w, "upload", nil)
 	case "POST":
+		//fmt.Fprintf(w, "Aguardando processamento ...  \n")
+		clearMaster()
 		uploadFile(w, r)
 	}
 }
@@ -126,7 +131,7 @@ func main() {
 
 	http.HandleFunc("/download", downloadHandler)
 
-	println(("Escutando na porta 8080"))
+	fmt.Println("Escutando na porta 8080")
 
 	//Listen on port 8080
 	http.ListenAndServe(":8080", nil)

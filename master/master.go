@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path"
-	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -114,7 +114,7 @@ func up() int {
 		go UploadFile(filename, f.Name(), &wg)
 
 	}
-	fmt.Printf("Numero de goroutines: %d\n", runtime.NumGoroutine())
+	//fmt.Printf("Numero de goroutines: %d\n", runtime.NumGoroutine())
 	wg.Wait()
 
 	return len(files)
@@ -122,7 +122,7 @@ func up() int {
 }
 
 func down() {
-	now := time.Now()
+
 	var wg sync.WaitGroup
 
 	//files := []string{"image_1.jpg", "image_2.jpg", "image_3.jpg", "image_4.jpg", "image_5.jpg"}
@@ -138,15 +138,9 @@ func down() {
 		go DownloadFile(f.Name(), &wg)
 	}
 
-	fmt.Printf("Numero de goroutines: %d\n", runtime.NumGoroutine())
+	//fmt.Printf("Numero de goroutines: %d\n", runtime.NumGoroutine())
 	wg.Wait()
 
-	defer func() {
-		fmt.Println()
-		fmt.Println("RELATÓRIO")
-		fmt.Println("Quantidade de imagens: ", len(files))
-		fmt.Println("Tempo de execução: ", time.Since(now))
-	}()
 }
 
 func deleteDatabases() {
@@ -164,9 +158,30 @@ func deleteDatabases() {
 }
 
 func createWorkers(qtdWorkers int) {
-	for i := 1; i <= qtdWorkers; i++ {
-		//cria worker
-		fmt.Println("Cria worker" + strconv.Itoa(i))
+
+	arg0 := "./executerWorkerContainer.sh"
+
+	cmd := exec.Command(arg0)
+	//fmt.Println(cmd.String())
+
+	errCmd := cmd.Run()
+
+	if errCmd != nil {
+		fmt.Println(errCmd)
+	}
+}
+
+func clearMaster() {
+
+	arg0 := "./clearMaster.sh"
+
+	cmd := exec.Command(arg0)
+	//fmt.Println(cmd.String())
+
+	errCmd := cmd.Run()
+
+	if errCmd != nil {
+		fmt.Println(errCmd)
 	}
 }
 
@@ -177,6 +192,7 @@ func master(arg string, wg *sync.WaitGroup) {
 
 	switch arg {
 	case "up":
+
 		unzip("banco.zip")
 
 		e := os.Remove("banco.zip")
@@ -186,7 +202,7 @@ func master(arg string, wg *sync.WaitGroup) {
 
 		tamanhoBanco := up()
 
-		fmt.Print("Quantidade de imagens: " + strconv.Itoa(tamanhoBanco))
+		fmt.Println("Quantidade de imagens: " + strconv.Itoa(tamanhoBanco))
 		//cria os workers
 		qtdWokers := tamanhoBanco / 10
 
@@ -194,7 +210,7 @@ func master(arg string, wg *sync.WaitGroup) {
 			qtdWokers = 1
 		}
 
-		fmt.Print("Quantidade de workers: " + strconv.Itoa(qtdWokers))
+		fmt.Println("Quantidade de workers: " + strconv.Itoa(qtdWokers))
 		createWorkers(qtdWokers)
 
 	case "down":

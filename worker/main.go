@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"runtime"
 	"sync"
 	"time"
 
@@ -22,9 +21,8 @@ import (
 func InitiateMongoClient() *mongo.Client {
 	var err error
 	var client *mongo.Client
-	//uri := "mongodb://root:example@localhost:27017/"
-	//uri := "mongodb://root:example@172.22.0.3:27017/"
-	uri := "mongodb://root:example@mongo_container:27017/"
+	uri := "mongodb://root:example@localhost:27017/"
+	//uri := "mongodb://root:example@mongo_container:27017/"
 	opts := options.Client()
 	opts.ApplyURI(uri)
 	opts.SetMaxPoolSize(5)
@@ -98,7 +96,7 @@ func DownloadFile(fileName string, wg *sync.WaitGroup) {
 }
 
 func up() {
-	now := time.Now()
+
 	var wg sync.WaitGroup
 
 	files, err := ioutil.ReadDir("./workerOutput")
@@ -115,19 +113,13 @@ func up() {
 		go UploadFile(filename, f.Name(), &wg)
 
 	}
-	fmt.Printf("Numero de goroutines: %d\n", runtime.NumGoroutine())
+
 	wg.Wait()
 
-	defer func() {
-		fmt.Println()
-		fmt.Println("RELATÓRIO")
-		fmt.Println("Quantidade de imagens: ", len(files))
-		fmt.Println("Tempo de execução: ", time.Since(now))
-	}()
 }
 
 func down(files []string) {
-	now := time.Now()
+
 	var wg sync.WaitGroup
 
 	//files := []string{"image_1.jpg", "image_2.jpg", "image_3.jpg", "image_4.jpg", "image_5.jpg"}
@@ -138,15 +130,8 @@ func down(files []string) {
 		go DownloadFile(f, &wg)
 	}
 
-	fmt.Printf("Numero de goroutines: %d\n", runtime.NumGoroutine())
 	wg.Wait()
 
-	defer func() {
-		fmt.Println()
-		fmt.Println("RELATÓRIO")
-		fmt.Println("Quantidade de imagens: ", len(files))
-		fmt.Println("Tempo de execução: ", time.Since(now))
-	}()
 }
 
 func workerApp() {
@@ -183,13 +168,15 @@ func main() {
 
 	for cursor.Next(context.TODO()) {
 		var result bson.D
+
 		if err := cursor.Decode(&result); err != nil {
 			log.Fatal(err)
 		}
 
 		files = append(files, fmt.Sprint(result.Map()["filename"]))
-
 		//fmt.Println(result.Map()["filename"])
+		fmt.Println("Tamanho do banco: ")
+		fmt.Print(len(files))
 
 	}
 	if err := cursor.Err(); err != nil {
