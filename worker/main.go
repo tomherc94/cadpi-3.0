@@ -18,11 +18,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var nameDB, _ = os.Hostname()
+
 func InitiateMongoClient() *mongo.Client {
 	var err error
 	var client *mongo.Client
-	uri := "mongodb://root:example@localhost:27017/"
-	//uri := "mongodb://root:example@mongo_container:27017/"
+	//uri := "mongodb://root:example@localhost:27017/"
+	uri := "mongodb://root:example@mongo_container:27017/"
 	opts := options.Client()
 	opts.ApplyURI(uri)
 	opts.SetMaxPoolSize(5)
@@ -70,7 +72,7 @@ func DownloadFile(fileName string, wg *sync.WaitGroup) {
 	conn := InitiateMongoClient()
 
 	// For CRUD operations, here is an example
-	db := conn.Database("originalImages")
+	db := conn.Database(nameDB)
 	fsFiles := db.Collection("fs.files")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -157,7 +159,7 @@ func main() {
 	var files []string
 
 	conn := InitiateMongoClient()
-	db := conn.Database("originalImages")
+	db := conn.Database(nameDB)
 
 	fsFiles := db.Collection("fs.files")
 
@@ -190,9 +192,14 @@ func main() {
 		up()
 
 	case "down":
+		now := time.Now()
+		fmt.Println("Download de imagens do BD ...")
 		down(files)
+		fmt.Println("Aplicativo JAVA ...")
 		workerApp()
+		fmt.Println("Upload de imagens para o BD ...")
 		up()
+		fmt.Println("Tempo de execução: ", time.Since(now))
 
 	default:
 		log.Fatal("Parametro incorreto")

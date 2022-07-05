@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path"
 	"strconv"
 	"sync"
 	"time"
@@ -18,6 +17,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/gridfs"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+var nameDBlist []string
 
 func InitiateMongoClient() *mongo.Client {
 	var err error
@@ -32,9 +33,7 @@ func InitiateMongoClient() *mongo.Client {
 	}
 	return client
 }
-func UploadFile(file, filename string, wg *sync.WaitGroup) {
-
-	defer wg.Done()
+func UploadFile(file, filename string, nameDB string) {
 
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
@@ -42,7 +41,7 @@ func UploadFile(file, filename string, wg *sync.WaitGroup) {
 	}
 	conn := InitiateMongoClient()
 	bucket, err := gridfs.NewBucket(
-		conn.Database("originalImages"),
+		conn.Database(nameDB),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -96,28 +95,30 @@ func DownloadFile(fileName string, wg *sync.WaitGroup) {
 
 }
 
-func up() int {
+func up(file string, wg *sync.WaitGroup, nameDB string) {
 
-	var wg sync.WaitGroup
+	defer wg.Done()
 
-	files, err := ioutil.ReadDir("./masterInput")
+	/*files, err := ioutil.ReadDir("./masterInput")
 	if err != nil {
 		log.Fatal(err)
-	}
+	}*/
 
-	for _, f := range files {
+	/*for _, f := range files {
 		wg.Add(1)
 
-		filename := "./masterInput/" + path.Base(f.Name())
+		filename := "./masterInput/" + path.Base(f)
 
 		//fmt.Println(filename + " -> MongoDB")
-		go UploadFile(filename, f.Name(), &wg)
+		go UploadFile(filename, f, &wg)
 
-	}
+	}*/
+
+	filename := "./masterInput/" + file
+
+	UploadFile(filename, file, nameDB)
+
 	//fmt.Printf("Numero de goroutines: %d\n", runtime.NumGoroutine())
-	wg.Wait()
-
-	return len(files)
 
 }
 
@@ -144,31 +145,103 @@ func down() {
 }
 
 func deleteDatabases() {
-	conn := InitiateMongoClient()
-	db := conn.Database("originalImages")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	db.Drop(ctx)
 
-	db = conn.Database("convertedImages")
-	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	conn := InitiateMongoClient()
+
+	for _, nameDB := range nameDBlist {
+
+		db := conn.Database(nameDB)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		db.Drop(ctx)
+	}
+
+	db := conn.Database("convertedImages")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	db.Drop(ctx)
 
 }
 
+func analyzeDB() int {
+
+	var wg sync.WaitGroup
+
+	var listTotal []string
+
+	files, err := ioutil.ReadDir("./masterInput")
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, f := range files {
+		listTotal = append(listTotal, f.Name())
+	}
+
+	fmt.Println("Quantidade total de imagens: " + strconv.Itoa(len(listTotal)))
+
+	qtdWorkers := len(listTotal) / 10
+
+	//qtdWorkers := 1
+
+	if qtdWorkers == 0 {
+		qtdWorkers = 1
+	}
+
+	fmt.Println("Quantidade de workers: " + strconv.Itoa(qtdWorkers))
+
+	i := 1
+
+	for _, imageName := range listTotal {
+
+		wg.Add(1)
+
+		nameDBcurrent := "worker" + strconv.Itoa(i)
+
+		nameDBlist = append(nameDBlist, nameDBcurrent)
+
+		go up(imageName, &wg, nameDBcurrent)
+
+		i++
+
+		if i > qtdWorkers {
+			i = 1
+		}
+
+	}
+
+	wg.Wait()
+
+	return (len(listTotal))
+}
+
 func createWorkers(qtdWorkers int) {
 
-	arg0 := "./executerWorkerContainer.sh"
+	var wg sync.WaitGroup
 
-	cmd := exec.Command(arg0)
-	//fmt.Println(cmd.String())
+	for i := 1; i <= qtdWorkers; i++ {
 
-	errCmd := cmd.Run()
+		wg.Add(1)
 
-	if errCmd != nil {
-		fmt.Println(errCmd)
+		nameDBcurrent := "worker" + strconv.Itoa(i)
+
+		arg0 := "./executerWorkerContainer.sh"
+
+		arg1 := nameDBcurrent
+
+		cmd := exec.Command(arg0, arg1)
+		//fmt.Println(cmd.String())
+
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+			errCmd := cmd.Run()
+
+			if errCmd != nil {
+				fmt.Println(errCmd)
+			}
+		}(&wg)
+
 	}
+	wg.Wait()
 }
 
 func clearMaster() {
@@ -200,18 +273,9 @@ func master(arg string, wg *sync.WaitGroup) {
 			log.Fatal(e)
 		}
 
-		tamanhoBanco := up()
+		qtdWorkers := analyzeDB()
 
-		fmt.Println("Quantidade de imagens: " + strconv.Itoa(tamanhoBanco))
-		//cria os workers
-		qtdWokers := tamanhoBanco / 10
-
-		if qtdWokers == 0 {
-			qtdWokers = 1
-		}
-
-		fmt.Println("Quantidade de workers: " + strconv.Itoa(qtdWokers))
-		createWorkers(qtdWokers)
+		createWorkers(qtdWorkers)
 
 	case "down":
 		down()
@@ -219,6 +283,7 @@ func master(arg string, wg *sync.WaitGroup) {
 		if err := zipSource("masterOutput", "banco.zip"); err != nil {
 			log.Fatal(err)
 		}
+		clearMaster()
 
 	default:
 		log.Fatal("Parametro incorreto")
