@@ -211,7 +211,7 @@ func analyzeDB() int {
 
 	wg.Wait()
 
-	return (len(listTotal))
+	return (qtdWorkers)
 }
 
 func createWorkers(qtdWorkers int) {
@@ -239,6 +239,8 @@ func createWorkers(qtdWorkers int) {
 				fmt.Println(errCmd)
 			}
 		}(&wg)
+
+		fmt.Println("CRIADO WORKER" + strconv.Itoa(i))
 
 	}
 	wg.Wait()
