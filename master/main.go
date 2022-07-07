@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -58,6 +59,13 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(dst, file); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	Original_Path := handler.Filename
+	New_Path := "banco.zip"
+	e := os.Rename(Original_Path, New_Path)
+	if e != nil {
+		log.Fatal(e)
 	}
 
 	//CHAMAR O MASTER.GO
