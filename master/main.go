@@ -9,6 +9,8 @@ import (
 	"sync"
 	"text/template"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 var filenames = []string{"public/upload.html", "public/download.html"}
@@ -108,6 +110,7 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
+
 		display(w, "upload", nil)
 	case "POST":
 		//fmt.Fprintf(w, "Aguardando processamento ...  \n")
@@ -119,6 +122,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 func downloadHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
+
 		display(w, "download", nil)
 	case "POST":
 		downloadFile(w, r)
@@ -126,6 +130,17 @@ func downloadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+
+	r := mux.NewRouter()
+	r.HandleFunc("/upload", uploadHandler)
+	r.HandleFunc("/download", downloadHandler)
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
+
+	fmt.Println("Escutando na porta 8080")
+	http.ListenAndServe(":8080", r)
+
+	/*http.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir("/public"))))
+
 	// Upload route
 	http.HandleFunc("/upload", uploadHandler)
 
@@ -134,6 +149,6 @@ func main() {
 	fmt.Println("Escutando na porta 8080")
 
 	//Listen on port 8080
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", nil)*/
 
 }

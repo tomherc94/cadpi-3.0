@@ -1,5 +1,5 @@
 #!/bin/bash
 
-docker run --cpu=0.25 --network=mongodb_rede-mongo --hostname $1 worker 
+docker run --cpus=0.75 --memory 1024m --network=mongodb_rede-mongo --hostname $1 worker 
 
 
