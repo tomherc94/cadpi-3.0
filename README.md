@@ -1,12 +1,12 @@
-Instalar o Golang e suas dependências:
+Instalar o Golang:
 https://go.dev/doc/install
+
+Baixar dependencias
 $go get go.mongodb.org/mongo-driver
+$go get github.com/gorilla/mux
 
 Instalar Docker e Docker-compose:
 https://docs.docker.com/engine/install/ubuntu/
-
-Instalar JAVA 11:
-https://www.edivaldobrito.com.br/oracle-java-11-no-ubuntu/
 
 Desativar MONGODB LOCAL (caso esteja rodando):
 $sudo /etc/init.d/mongodb stop
@@ -18,43 +18,16 @@ $sudo docker-compose -f mongodb.yml up
 Verificar execução do MongoDB via browser:
 http://localhost:8081
 
-Colocar imagens manualmente no diretório masterInput
+Executar servidor (dentro do diretório master):
+$go run *.go
 
-Upload de imagens para o BD (Master):
-$cd master
-$go run main.go up
+Acessar servidor:
+http://localhost:8080/upload
 
-Download de imagens do BD (Worker):
-$cd worker
-$go run main.go down
+Selecionar banco de imagens (compactadas .zip)
 
-Processamento de imagens:
-$./executeWorkerApp.sh
+Clicar em Upload
 
-Upload de imagens processadas para o BD (Worker):
-$go run main.go up
+Aguardar processamento ...
 
-Download de imagens processadas do BD (Master):
-$cd master
-$go run main.go down
-
-Verificar imagens convertidas no diretório masterOutput
-
-
-
-
-
-BIZU!
-
-Método 1 :
-
-Suponha que o nome do seu projeto sejaMyProject
-Vá para o seu caminho, corrago build
-Ele criará um arquivo executável como o nome do seu projeto ("MyProject")
-Em seguida, execute o executável usando./MyProject
-Você pode fazer as duas etapas ao mesmo tempo digitando go build && ./MyProject. Os arquivos Go do package mainsão compilados em um executável.
-
-Método 2 :
-
-Basta correr go run *.go. Ele não criará nenhum executável, mas será executado.
-
+Fazer Download do banco de imagens convertido
