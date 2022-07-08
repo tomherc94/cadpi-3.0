@@ -167,15 +167,20 @@ func analyzeDB() int {
 
 	var wg sync.WaitGroup
 
-	var listTotal []string
+	//var listTotal []string
+	listTotal := make(map[string]int64)
 
 	files, err := ioutil.ReadDir("./masterInput")
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	for _, f := range files {
-		listTotal = append(listTotal, f.Name())
+		listTotal[f.Name()] = f.Size()
+		//listTotal = append(listTotal, f.Name())
 	}
+
+	listTotalOrdenado := sortList(listTotal)
 
 	fmt.Println("Quantidade total de imagens: " + strconv.Itoa(len(listTotal)))
 
@@ -191,7 +196,8 @@ func analyzeDB() int {
 
 	i := 1
 
-	for _, imageName := range listTotal {
+	//Distribui a base de imagens entre os buckets
+	for _, imageName := range listTotalOrdenado {
 
 		wg.Add(1)
 
