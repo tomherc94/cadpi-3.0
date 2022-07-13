@@ -24,8 +24,8 @@ func InitiateMongoClient() *mongo.Client {
 	var err error
 	var client *mongo.Client
 	//uri := "mongodb://localhost:27017"
-	//uri := "mongodb://root:example@localhost:27017/"
-	uri := "mongodb://root:example@mongo_container:27017/"
+	uri := "mongodb://root:example@localhost:27017/"
+	///uri := "mongodb://root:example@mongo_container:27017/"
 	opts := options.Client()
 	opts.ApplyURI(uri)
 	opts.SetMaxPoolSize(5)

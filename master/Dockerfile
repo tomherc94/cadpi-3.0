@@ -12,17 +12,17 @@ RUN chmod 777 clearMaster.sh
 
 RUN chmod 777 executerWorkerContainer.sh
 
-RUN chmod 777 dockerInstall.sh
+RUN chmod 777 master.sh
 
-RUN ./dockerInstall.sh
+RUN ./master.sh
 
-RUN service docker start
+#RUN service docker start
 
-RUN usermod -aG docker root
+#RUN usermod -aG docker root
 
-RUN chown root:docker /var/run/docker.sock
+#RUN chown root:docker /var/run/docker.sock
 
-RUN docker load < /home/master/worker.tar
+#RUN docker load < /home/master/worker.tar
 
 RUN go build -o master
 
