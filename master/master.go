@@ -20,10 +20,12 @@ import (
 
 var nameDBlist []string
 
+var conn = InitiateMongoClient()
+
 func InitiateMongoClient() *mongo.Client {
 	var err error
 	var client *mongo.Client
-	uri := "mongodb://root:example@192.168.0.103:27017/"
+	uri := "mongodb://root:example@localhost:27017/"
 	//uri := "mongodb://root:example@localhost:27017/"
 	///uri := "mongodb://root:example@mongo_container:27017/"
 	opts := options.Client()
@@ -40,7 +42,8 @@ func UploadFile(file, filename string, nameDB string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	conn := InitiateMongoClient()
+	//conn := InitiateMongoClient()
+
 	bucket, err := gridfs.NewBucket(
 		conn.Database(nameDB),
 	)
@@ -68,7 +71,7 @@ func DownloadFile(fileName string, wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
-	conn := InitiateMongoClient()
+	//conn := InitiateMongoClient()
 
 	// For CRUD operations, here is an example
 	db := conn.Database("convertedImages")
@@ -147,7 +150,7 @@ func down() {
 
 func deleteDatabases() {
 
-	conn := InitiateMongoClient()
+	//conn := InitiateMongoClient()
 
 	for _, nameDB := range nameDBlist {
 
@@ -187,7 +190,7 @@ func analyzeDB() int {
 
 	//qtdWorkers := len(listTotal) / 10
 
-	qtdWorkers := 1
+	qtdWorkers := 5
 
 	if qtdWorkers == 0 {
 		qtdWorkers = 1

@@ -83,6 +83,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Tempo de execução: ", time.Since(now))
 
 	http.Redirect(w, r, "/download", http.StatusFound)
+	//conn.Disconnect(context.TODO())
 
 }
 
