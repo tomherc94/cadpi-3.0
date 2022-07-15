@@ -23,8 +23,8 @@ var nameDBlist []string
 func InitiateMongoClient() *mongo.Client {
 	var err error
 	var client *mongo.Client
-	//uri := "mongodb://localhost:27017"
-	uri := "mongodb://root:example@localhost:27017/"
+	uri := "mongodb://root:example@192.168.0.103:27017/"
+	//uri := "mongodb://root:example@localhost:27017/"
 	///uri := "mongodb://root:example@mongo_container:27017/"
 	opts := options.Client()
 	opts.ApplyURI(uri)
@@ -185,9 +185,9 @@ func analyzeDB() int {
 
 	fmt.Println("Quantidade total de imagens: " + strconv.Itoa(len(listTotal)))
 
-	qtdWorkers := len(listTotal) / 10
+	//qtdWorkers := len(listTotal) / 10
 
-	//qtdWorkers := 1
+	qtdWorkers := 1
 
 	if qtdWorkers == 0 {
 		qtdWorkers = 1
