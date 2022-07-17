@@ -76,6 +76,8 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	go master("up", &wg)
 	wg.Wait()
 
+	time.Sleep(3 * time.Second)
+
 	wg.Add(1)
 	go master("down", &wg)
 	wg.Wait()

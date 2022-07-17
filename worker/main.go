@@ -19,6 +19,7 @@ import (
 )
 
 var nameDB, _ = os.Hostname()
+var conn = InitiateMongoClient()
 
 func InitiateMongoClient() *mongo.Client {
 	var err error
@@ -41,7 +42,7 @@ func UploadFile(file, filename string, wg *sync.WaitGroup) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	conn := InitiateMongoClient()
+	//conn := InitiateMongoClient()
 	bucket, err := gridfs.NewBucket(
 		conn.Database("convertedImages"),
 	)
@@ -69,7 +70,7 @@ func DownloadFile(fileName string, wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
-	conn := InitiateMongoClient()
+	//conn := InitiateMongoClient()
 
 	// For CRUD operations, here is an example
 	db := conn.Database(nameDB)
@@ -158,7 +159,7 @@ func main() {
 
 	var files []string
 
-	conn := InitiateMongoClient()
+	//conn := InitiateMongoClient()
 	db := conn.Database(nameDB)
 
 	fsFiles := db.Collection("fs.files")
@@ -195,10 +196,13 @@ func main() {
 		now := time.Now()
 		fmt.Println("Download de imagens do BD ...")
 		down(files)
+		time.Sleep(1 * time.Second)
 		fmt.Println("Aplicativo JAVA ...")
 		workerApp()
+		time.Sleep(1 * time.Second)
 		fmt.Println("Upload de imagens para o BD ...")
 		up()
+		time.Sleep(1 * time.Second)
 		fmt.Println("Tempo de execução: ", time.Since(now))
 
 	default:

@@ -92,6 +92,8 @@ func DownloadFile(fileName string, wg *sync.WaitGroup) {
 	var buf bytes.Buffer
 	dStream, err := bucket.DownloadToStreamByName(fileName, &buf)
 	if err != nil {
+		deleteDatabases()
+		clearMaster()
 		log.Fatal(err)
 	}
 	fmt.Printf("File size to download: %v\n", dStream)
@@ -190,7 +192,7 @@ func analyzeDB() int {
 
 	//qtdWorkers := len(listTotal) / 10
 
-	qtdWorkers := 5
+	qtdWorkers := 12
 
 	if qtdWorkers == 0 {
 		qtdWorkers = 1
@@ -301,11 +303,4 @@ func master(arg string, wg *sync.WaitGroup) {
 		log.Fatal("Parametro incorreto")
 	}
 
-	/*// Get os.Args values
-	file := os.Args[1] //os.Args[1] = testfile.zip
-	filename := path.Base(file)
-	UploadFile(file, filename)
-	// Uncomment the below line and comment the UploadFile above this line to download the file
-	//DownloadFile(filename)
-	*/
 }
