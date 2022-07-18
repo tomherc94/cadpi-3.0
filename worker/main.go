@@ -152,13 +152,9 @@ func workerApp() {
 
 }
 
-func main() {
-
-	//arg := os.Args[1]
-	arg := "down"
+func analyzeDB() []string {
 
 	var files []string
-
 	//conn := InitiateMongoClient()
 	db := conn.Database(nameDB)
 
@@ -178,8 +174,8 @@ func main() {
 
 		files = append(files, fmt.Sprint(result.Map()["filename"]))
 		//fmt.Println(result.Map()["filename"])
-		fmt.Println("Tamanho do banco: ")
-		fmt.Print(len(files))
+		//fmt.Println("Tamanho do banco: ")
+		//fmt.Print(len(files))
 
 	}
 	if err := cursor.Err(); err != nil {
@@ -188,32 +184,24 @@ func main() {
 
 	defer cursor.Close(context.TODO())
 
-	switch arg {
-	case "up":
-		up()
+	return files
+}
 
-	case "down":
-		now := time.Now()
-		fmt.Println("Download de imagens do BD ...")
-		down(files)
-		time.Sleep(1 * time.Second)
-		fmt.Println("Aplicativo JAVA ...")
-		workerApp()
-		time.Sleep(1 * time.Second)
-		fmt.Println("Upload de imagens para o BD ...")
-		up()
-		time.Sleep(1 * time.Second)
-		fmt.Println("Tempo de execução: ", time.Since(now))
+func main() {
 
-	default:
-		log.Fatal("Parametro incorreto")
-	}
+	files := analyzeDB()
 
-	/*// Get os.Args values
-	file := os.Args[1] //os.Args[1] = testfile.zip
-	filename := path.Base(file)
-	UploadFile(file, filename)
-	// Uncomment the below line and comment the UploadFile above this line to download the file
-	//DownloadFile(filename)
-	*/
+	now := time.Now()
+
+	fmt.Println("Download de imagens do BD ...")
+	down(files)
+
+	fmt.Println("Aplicativo JAVA ...")
+	workerApp()
+
+	fmt.Println("Upload de imagens para o BD ...")
+	up()
+
+	fmt.Println("Tempo de execução: ", time.Since(now))
+
 }
