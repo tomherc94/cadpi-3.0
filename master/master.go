@@ -190,9 +190,9 @@ func analyzeDB() int {
 
 	fmt.Println("Quantidade total de imagens: " + strconv.Itoa(len(listTotal)))
 
-	//qtdWorkers := len(listTotal) / 10
+	qtdWorkers := len(listTotal) / 10
 
-	qtdWorkers := 12
+	//qtdWorkers := 10
 
 	if qtdWorkers == 0 {
 		qtdWorkers = 1

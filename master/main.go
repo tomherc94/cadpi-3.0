@@ -89,7 +89,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func downloadFile(w http.ResponseWriter, r *http.Request) {
+func downloadFile(w http.ResponseWriter, _ *http.Request) {
 	Openfile, err := os.Open("./banco.zip") //Open the file to be downloaded later
 	//Close after function return
 
